@@ -11,6 +11,8 @@ namespace Budnikova_M8O_307_CG2
             Application.Init();
 
 
+            var a = 0;
+
             var app = new Application("org.CG.CG", GLib.ApplicationFlags.None);
             app.Register(GLib.Cancellable.Current);
 
