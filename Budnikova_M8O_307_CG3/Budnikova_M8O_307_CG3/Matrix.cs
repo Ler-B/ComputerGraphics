@@ -1,4 +1,5 @@
 ﻿using System;
+using GLib;
 
 namespace Budnikova_M8O_307_CG3
 {
@@ -154,6 +155,16 @@ namespace Budnikova_M8O_307_CG3
                                 a.Z * b,
                                 0);
         }
+        public static bool Equal(Vector4d a, Vector4d b)
+        {
+            return a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+        }
+
+        public static double Angle(Vector4d v1, Vector4d v2)
+        {
+            return Math.Abs(Math.Acos(Scalar(v1, v2) / v1.Abs() / v2.Abs()));
+        }
+        
         public static double Scalar(Vector4d a, Vector4d b)
         {
             return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
@@ -165,6 +176,11 @@ namespace Budnikova_M8O_307_CG3
         public double Sum_Coordinates()
         {
             return Y;
+        }
+
+        public void Print()
+        {
+            Console.WriteLine($" x = {X}, y = {Y}, z = {Z}");
         }
         
     }

@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Gtk;
 
 using Line2d = System.Collections.Generic.List<Budnikova_M8O_307_CG3.Vector2d>;
@@ -388,6 +390,32 @@ namespace Budnikova_M8O_307_CG3
     {
         private readonly List<Vector4d> _list;
         public int Size => _list.Count;
+
+        public Vector4d Norm
+        {
+            get
+            {
+                Vector4d vec1 = this[3] - this[0];
+                Vector4d vec2 = this[1] - this[0];
+
+                if ((vec1 * vec2).Abs() == 0)
+                {
+                    if (Vector4d.Equal(this[1], this[0]))
+                    {
+                        vec2 = this[2] - this[0];
+                    }
+                    else
+                    {
+                        vec1 = this[2] - this[0];
+                    }
+                    
+                }
+                
+                Vector4d norm = vec1 * vec2 / (vec1 * vec2).Abs();
+
+                return norm;
+            }
+        }
         
         public Vector4d this[int i]
         {
@@ -413,6 +441,11 @@ namespace Budnikova_M8O_307_CG3
         public Polygon4Vec4d(Vector4d[] l)
         {
             _list = new List<Vector4d> { l[0], l[1], l[2], l[3] };
+        }
+        
+        public Polygon4Vec4d(Polygon4Vec4d p)
+        {
+            _list = new List<Vector4d> { p[0], p[1], p[2], p[3] };
         }
 
         public void Add(Vector4d a)
@@ -464,6 +497,26 @@ namespace Budnikova_M8O_307_CG3
             return rez;
         }
 
+
+        // public int CompareTo(object obj)
+        // {
+        //     Polygon4Vec4d polygon = obj as Polygon4Vec4d;
+        //
+        //     double minThis = this[0].Y;
+        //     double minP = polygon[0].Y;
+        //
+        //     foreach (Vector4d v in this)
+        //     {
+        //         minThis = v.Y < minThis ? v.Y : minThis;
+        //     }
+        //     
+        //     foreach (Vector4d v in polygon)
+        //     {
+        //         minThis = v.Y < minThis ? v.Y : minThis;
+        //     }
+        //
+        //     return minP < minThis ? 1 : -1;
+        // }
     }
 
 

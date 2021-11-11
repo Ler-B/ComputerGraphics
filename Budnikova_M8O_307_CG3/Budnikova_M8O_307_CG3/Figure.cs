@@ -35,7 +35,6 @@ namespace Budnikova_M8O_307_CG3
                     double z1 = r * Math.Cos(theta);
                     double w1 = 1;
                     oneCirclePoints.Add(new Vector4d(x1, y1, z1, w1));
-                    Console.WriteLine($"{x1}   -   {y1}   -   {z1}");
                 }
                 allPoints.Add(new List<Vector4d>(oneCirclePoints));
                 oneCirclePoints.Clear();
@@ -74,7 +73,8 @@ namespace Budnikova_M8O_307_CG3
             {
                 for (int j = 0; j < points[i].Count; ++j)
                 {
-
+                    if (i == points.Count - 1 && j == 0) break;
+                    
                     int iInd = (i + 1) % points.Count;
                     int jInd = (j + 1) % points[i].Count;
 
@@ -82,20 +82,11 @@ namespace Budnikova_M8O_307_CG3
                     Vector4d point2 = points[i][jInd];
                     Vector4d point3 = points[iInd][j];
                     Vector4d point4 = points[iInd][jInd];
+                    
                     _polygons.Add(new Polygon4Vec4d(point1, point2, point4, point3));
-
-                    /*
-                            j             j+1
-
-                     i    point1 ------- point2
-                            |              |
-                            |              |
-                            |              |
-                     i+1  point3 ------- point4
-
-                    */
-
+                    
                 }
+                
             }
         }
 
@@ -120,7 +111,7 @@ namespace Budnikova_M8O_307_CG3
                 p.Modify(Matrix4d.Rot_XYZ(angleX, angleY, angleZ));
             }
         }
-
+        
         public void Scale_XYZ(double scaleX, double scaleY, double scaleZ)
         {
             foreach (var p in _polygons)
@@ -141,45 +132,33 @@ namespace Budnikova_M8O_307_CG3
         {
             List<Line2d> rezList = new();
 
-            double minY = _polygons[0][0].Y;
+            List<Polygon4Vec4d> zBuffPol = HideInvLine();
 
-            foreach (var p in _polygons)
+            foreach (var p in zBuffPol)
             {
-                if (p.Min_Y() < minY)
-                {
-                    minY = p.Min_Y();
-                }
+                rezList.Add(Get_2d_line(p[0], p[1], dx, dy));
+                rezList.Add(Get_2d_line(p[1], p[2], dx, dy));
+                rezList.Add(Get_2d_line(p[2], p[3], dx, dy));
+                rezList.Add(Get_2d_line(p[3], p[0], dx, dy));
             }
-
-
-            foreach (var p in _polygons)
-            {
-                if (Math.Abs(Math.Min(p[0].Y, p[1].Y) - minY) > 0)
-                {
-
-                    rezList.Add(Get_2d_line(p[0], p[1], dx, dy));
-                }
-
-                if (Math.Abs(Math.Min(p[1].Y, p[2].Y) - minY) > 0)
-                {
-                    rezList.Add(Get_2d_line(p[1], p[2], dx, dy));
-                }
-
-                if (Math.Abs(Math.Min(p[2].Y, p[3].Y) - minY) > 0)
-                {
-                    rezList.Add(Get_2d_line(p[2], p[3], dx, dy));
-                }
-
-                if (Math.Abs(Math.Min(p[3].Y, p[0].Y) - minY) > 0)
-                {
-                    rezList.Add(Get_2d_line(p[3], p[0], dx, dy));
-                }
-                
-            }
-
             return rezList;
         }
 
+        public List<Polygon4Vec4d> HideInvLine()
+        {
+            List<Polygon4Vec4d> newPoints = new();
+            
+            foreach (Polygon4Vec4d p in _polygons)
+            {
+                if (Vector4d.Angle(p.Norm, new Vector4d(0, 1, 0, 1)) < Math.PI / 2)
+                {
+                    newPoints.Add(new Polygon4Vec4d(p));
+                }
+            }
+
+            return newPoints;
+        }
+        
         public List<Line2d> Get_XYZ_Points(double dx = 0, double dy = 0)
         {
             List<Line2d> rezList = new();
@@ -254,38 +233,21 @@ namespace Budnikova_M8O_307_CG3
         {
             List<Line2d> rezList = new();
 
-            double minY = _polygons[0][0].Y;
+            List<Polygon4Vec4d> newPolygons = HideInvLine();
 
-            foreach (var p in _polygons)
+            foreach (Polygon4Vec4d p in newPolygons)
             {
-                if (p.Min_Y() < minY)
-                {
-                    minY = p.Min_Y();
-                }
+                Vector4d norm = p.Norm;
+
+                double l2 = new[] {p[0].Abs(), p[1].Abs(), p[2].Abs(), p[3].Abs()}.Min() / 4;
+
+                Vector4d p1 = (p[0] + p[1] + p[2] + p[3]) / 4;
+                Vector4d p2 = p1 + norm * l2;
+
+                Line2d newLine = new(new Vector2d(p1.X + dx, p1.Z + dy), new Vector2d(p2.X + dx, p2.Z + dy));
+                rezList.Add(newLine);
             }
-
-            foreach (var p in _polygons)
-            {
-                if (Math.Abs(p.Min_Y() - minY) > 0)
-                {
-                    Vector4d vec1 = p[1] - p[0];
-                    Vector4d vec2 = p[3] - p[0];
-                    //Vector4d sum = vec1 + vec2;
-
-                    Vector4d norm = vec1 * vec2 / (vec1 * vec2).Abs();
-
-                    //double l1 = ((p[0] - _center) * sum).Abs() / sum.Abs();
-                    // double l2 = new double[] { _len1, _len2, _len3 }.Min() / 2;
-                    const double l2 = 1;
-
-                    Vector4d p1 = (p[0] + p[1] + p[2] + p[3]) / 4;
-                    Vector4d p2 = p1 + norm * l2;
-
-                    Line2d newLine = new(new Vector2d(p1.X + dx, p1.Z + dy), new Vector2d(p2.X + dx, p2.Z + dy));
-                    rezList.Add(newLine);
-                }
-            }
-
+ 
             return rezList;
         }
 

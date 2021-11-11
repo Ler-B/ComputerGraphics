@@ -18,6 +18,7 @@ namespace Budnikova_M8O_307_CG3
 
         private readonly SpinButton _r;
         private readonly SpinButton _mer, _par;
+        private readonly SpinButton _width;
         private readonly CheckButton _hideInvisibleLines;
         private readonly CheckButton _normals, _fill;
         private readonly CheckButton _oxy, _oxz, _oyz;
@@ -38,6 +39,7 @@ namespace Budnikova_M8O_307_CG3
             _r = new SpinButton(this, "R", value: 100, step:50, min:0, max:10000);
             _mer = new SpinButton(this, "Meridians", value: 5, step: 1, min: 1, max: 100);
             _par = new SpinButton(this, "Paralels", value: 5, step: 1, min: 1, max: 100);
+            _width = new SpinButton(this, "Line Width", value: 3, step: 1, min: 0.5, max: 10);
 
             _colorRgbLine2d = new Spin3DButton(this, "Color RGB Line2d", x: 255, y: 0, z: 255, min:0, max:255);
             _colorRgbFill = new Spin3DButton(this, "Color RGB Fill", x: 100, y: 0, z: 255, min: 0, max: 255);
@@ -64,6 +66,7 @@ namespace Budnikova_M8O_307_CG3
 
             _box.Add(_colorRgbLine2d.Widget);
             _box.Add(_colorRgbFill.Widget);
+            _box.Add(_width.Widget);
 
             _box.Add(_hideInvisibleLines.Widget);
 
@@ -227,14 +230,14 @@ namespace Budnikova_M8O_307_CG3
                 figurePoints = s.Get_XYZ_Points_Without_Invisible_Lines(dx: dx, dy: dy);
             }
 
-            
-
 
             List<(Line2d, int r, int g, int b, double width)> pointsFigure = new();
 
+            double width = _width.Value;
+            
             foreach (Line2d f in figurePoints)
             {
-                (Line2d, int r, int g, int b, double width) l = new (f, (int)_colorRgbLine2d.X / 255, (int)_colorRgbLine2d.Y / 255, (int)_colorRgbLine2d.Z / 255, 4);
+                (Line2d, int r, int g, int b, double width) l = new (f, (int)_colorRgbLine2d.X / 255, (int)_colorRgbLine2d.Y / 255, (int)_colorRgbLine2d.Z / 255, width);
                 pointsFigure.Add(l);
             }
 
