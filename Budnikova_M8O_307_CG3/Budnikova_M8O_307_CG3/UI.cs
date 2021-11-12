@@ -2,12 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
+using GLib;
 using Gtk;
 
 using Line2d = System.Collections.Generic.List<Budnikova_M8O_307_CG3.Vector2d>;
 
 namespace Budnikova_M8O_307_CG3
 {
+    
     public class SpinButton
     {
         private readonly Gtk.SpinButton _button;
@@ -18,69 +21,83 @@ namespace Budnikova_M8O_307_CG3
             set => _button.Value = value;
         }
 
-        
-
         public SpinButton(MyWindow window, string label, double value = 0, double min = -1000, double max = 1000, double step = 1)
         {
-            var box = new HBox { new Label(label) };
+            var box = new HBox {new Label("  ")};
+            box.Add(new Label(label));
             _button = new Gtk.SpinButton(min, max, step) { Digits = 3, Value = value };
             _button.Halign = Align.Start;
-            _button.Margin = 10;
+            _button.Margin = 1;
             _button.ValueChanged += (_, _) => window.RequestRedraw();
 
             box.Add(_button);
             Widget = box;
+            Widget.Halign = Align.Start;
         }
-    };
+    }
 
-    public class Spin2DButton
+    public class SpinButtons
     {
-        private readonly Gtk.SpinButton _button1;
-        private readonly Gtk.SpinButton _button2;
+        private readonly List<Gtk.SpinButton> _buttons = new();
+        private readonly string[] _names;
         public Widget Widget { get; }
 
-        public double X
+        public double this[string s]
         {
-            get => _button1.Value;
-            set => _button1.Value = value;
-        }
+            get
+            {
+                for (int i = 0; i < _buttons.Count; ++i)
+                {
+                    if (_names[i] == s)
+                    {
+                        return _buttons[i].Value;
+                    }
+                }
 
-        public double Y
-        {
-            get => _button2.Value;
-            set => _button2.Value = value;
-        }
-
-        public Vector2d Value
-        {
-            get => new Vector2d(_button1.Value, _button2.Value);
+                throw new ArgumentException();
+            }
             set
             {
-                _button1.Value = value.X;
-                _button2.Value = value.Y;
+                for (int i = 0; i < _buttons.Count; ++i)
+                {
+                    if (_names[i] == s)
+                    {
+                        _buttons[i].Value = value;
+                    }
+                }
             }
         }
 
-        public Spin2DButton(MyWindow window, string label, double x = 0, double y = 0, double min = -1000, double max = 1000, double step = 1)
+        public SpinButtons(MyWindow window, string label, string[] names, double[] values, double[] min, double[] max, double[] steps)
         {
+            if (names.Length != values.Length || values.Length != min.Length ||
+                min.Length != max.Length || max.Length != steps.Length) throw new ArgumentException();
+            
             var box = new HBox { new Label(label) };
 
-            _button1 = new Gtk.SpinButton(min, max, step) { Digits = 3, Value = x };
-            _button1.Halign = Align.Start;
-            _button1.Margin = 10;
-            _button1.ValueChanged += (_,_) => window.RequestRedraw();
+            _names = names;
+            for (int i = 0; i < names.Length; ++i)
+            {
+                var btn = new Gtk.SpinButton(min[i], max[i], steps[i]) { Digits = 3, Value = values[i] };
+                btn.Halign = Align.End;
+                btn.Margin = 1;
+                
+                btn.ValueChanged += (_, _) => window.RequestRedraw();
 
-            _button2 = new Gtk.SpinButton(min, max, step) { Digits = 3, Value = y };
-            _button2.Halign = Align.Start;
-            _button2.Margin = 10;
-            _button2.ValueChanged += (_,_) => window.RequestRedraw();
+                _buttons.Add(btn);
+            }
 
-
-            box.Add(_button1);
-            box.Add(_button2);
+            for (int i = 0; i < _buttons.Count; ++i)
+            {
+                box.Add(new Label("  "));
+                box.Add(new Label(names[i]));
+                box.Add(new Label("  "));
+                box.Add(_buttons[i]);
+            }
+            
             Widget = box;
+            Widget.Halign = Align.Center;
         }
-
     }
 
     public class Spin3DButton
@@ -120,27 +137,30 @@ namespace Budnikova_M8O_307_CG3
 
         public Spin3DButton(MyWindow window, string label, double x = 0, double y = 0, double z = 0, double min = -1000, double max = 1000, double step = 1)
         {
-            var box = new HBox { new Label(label) };
-
+            var box = new HBox {new Label("  ")};
+            box.Add(new Label(label));
+            box.Add(new Label("  "));
+            
             _button1 = new Gtk.SpinButton(min, max, step) { Digits = 3, Value = x };
             _button1.Halign = Align.Start;
-            _button1.Margin = 10;
+            _button1.Margin = 1;
             _button1.ValueChanged += (_,_) => window.RequestRedraw();
 
             _button2 = new Gtk.SpinButton(min, max, step) { Digits = 3, Value = y };
             _button2.Halign = Align.Start;
-            _button2.Margin = 10;
+            _button2.Margin = 1;
             _button2.ValueChanged += (_,_) => window.RequestRedraw();
 
             _button3 = new Gtk.SpinButton(min, max, step) { Digits = 3, Value = z };
             _button3.Halign = Align.Start;
-            _button3.Margin = 10;
+            _button3.Margin = 1;
             _button3.ValueChanged += (_,_) => window.RequestRedraw();
-
+            
             box.Add(_button1);
             box.Add(_button2);
             box.Add(_button3);
             Widget = box;
+            Widget.Halign = Align.Center;
         }
     }
 
@@ -157,14 +177,78 @@ namespace Budnikova_M8O_307_CG3
 
         public CheckButton(MyWindow window, string label, bool check = false)
         {
-            var box = new HBox { new Label(label) };
+            var box = new HBox {new Label("  ")};
+            box.Add(new Label(label));
+            box.Add(new Label("  "));
+            
             _button = new Gtk.CheckButton { Active = check };
+            _button.Margin = 1;
             _button.Clicked += (_,_) => window.RequestRedraw();
 
             box.Add(_button);
             Widget = box;
+            Widget.Halign = Align.Center;
         }
     }
+    
+    public class CheckButtons
+    {
+        private readonly List<Gtk.CheckButton> _buttons = new();
+        public Widget Widget { get; }
+
+        public bool this[string s]
+        {
+            get
+            {
+                foreach (var b in _buttons)
+                {
+                    if (b.Label == s)
+                    {
+                        return b.Active;
+                    }
+                }
+
+                throw new ArgumentException();
+            }
+            set
+            {
+                foreach (var b in _buttons)
+                {
+                    if (b.Label == s)
+                    {
+                        b.Active = value;
+                    }
+                }
+            }
+        }
+
+        public CheckButtons(MyWindow window, string label, string[] names, bool[] check)
+        {
+            if (names.Length != check.Length) throw new ArgumentException();
+            
+            var box = new HBox { new Label(label) };
+
+            for (int i = 0; i < names.Length; ++i)
+            {
+                var btn = new Gtk.CheckButton { Active = check[i] };
+                btn = new Gtk.CheckButton {Active = check[i]};
+                btn.Label = names[i];
+                btn.Clicked += (_,_) => window.RequestRedraw();
+                _buttons.Add(btn);
+            }
+
+            foreach (var b in _buttons)
+            {   
+                box.Add(new Label("  "));
+                box.Add(b);;
+                box.Add(new Label("   "));
+            }
+            
+            Widget = box;
+            Widget.Halign = Align.Center;
+        }
+    }
+    
 
     public class CheckSpin2DButton
     {
@@ -193,334 +277,70 @@ namespace Budnikova_M8O_307_CG3
         public CheckSpin2DButton(MyWindow window, string labelCheck, bool check, string label1, string label2, double x = 0, double y = 0,
                                     double min1 = -1000, double max1 = 1000, double step1 = 1, double min2 = -1000, double max2 = 1000, double step2 = 1)
         {
-            var box = new HBox { new Label(labelCheck) };
+            var box = new HBox {new Label("  ")};
+            box.Add(new Label(labelCheck));
+            box.Add(new Label("   "));
+            
             _button = new Gtk.CheckButton { Active = check };
             _button.Clicked += (_,_) => window.RequestRedraw();
             box.Add(_button);
+            
+            box.Add(new Label("  "));
 
             box.Add(new Label(label1));
             _button1 = new Gtk.SpinButton(min1, max1, step1) { Digits = 3, Value = x };
             _button1.Halign = Align.Start;
-            _button1.Margin = 10;
+            _button1.Margin = 1;
             _button1.ValueChanged += (_,_) => { if (_button.Active) window.RequestRedraw(); };
             box.Add(_button1);
+            
+            box.Add(new Label("  "));
 
             box.Add(new Label(label2));
             _button2 = new Gtk.SpinButton(min2, max2, step2) { Digits = 3, Value = y };
             _button2.Halign = Align.Start;
-            _button2.Margin = 10;
+            _button2.Margin = 1;
             _button2.ValueChanged += (_,_) => { if (_button.Active) window.RequestRedraw(); };
             box.Add(_button2);
 
             Widget = box;
+            Widget.Halign = Align.Center;
         }
     }
 
-    public class Line2d
+    public class ChoiceButton
     {
-        private readonly List<Vector2d> _list;
-        public int Size => _list.Count;
+        private readonly AppChooserButton _button;
+        // private readonly Gtk.SpinButton _button;
+        public Widget Widget { get; }
+        public string Value => _button.AppInfo.DisplayName;
         
-        public Vector2d this[int i]
+        public ChoiceButton(MyWindow window, string label, string[] labels)
         {
-            get => _list[i];
-            set => _list[i] = value;
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
-
-        public Line2d(Vector2d r, Vector2d l)
-        {
-            _list = new List<Vector2d> { r, l };
-        }
-
-        public Line2d(Vector2d[] l)
-        {
-            this._list = new List<Vector2d> { l[0], l[1] };
-        }
-        
-    }
-
-    public class Line4d
-    {
-        private readonly List<Vector4d> _list;
-        public int Size => _list.Count;
-        
-        public Vector4d this[int i]
-        {
-            get => _list[i];
-            set => _list[i] = value;
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
-
-        public Line4d(Vector4d r, Vector4d l)
-        {
-            _list = new List<Vector4d> { r, l };
-        }
-
-        public Line4d(Vector4d[] l)
-        {
-            _list = new List<Vector4d> { l[0], l[1] };
-        }
-
-        public void Modify(Matrix4d m)
-        {
-            for (int i = 0; i < _list.Count; ++i)
+            var box = new HBox { new Label("  ")};
+            box.Add(new Label(label));
+            box.Add(new Label("  "));
+            _button = new AppChooserButton("choice");
+            
+            var icon = new ThemedIcon("");
+            foreach (var l in labels)
             {
-                _list[i] = m * _list[i];
-            }
-        }
-
-        public Line4d New_Modify(Matrix4d m)
-        {
-            Line4d l = new(this[0], this[1]);
-            l.Modify(m);
-            return l;
-        }
-
-        public double Min_Y()
-        {
-            double min = _list[0].Y;
-
-            for (int i = 0; i < Size; ++i)
-            {
-                if (this[i].Y < min)
-                {
-                    min = this[i].Y;
-                }
+                _button.AppendSeparator();
+                _button.AppendCustomItem(l, l, icon);
             }
 
-            return min;
-        }
+            _button.ActiveCustomItem = labels[0];
+            
+            
+            _button.Halign = Align.Start;
+            _button.Margin = 1;
+            _button.Changed += (_, _) => window.RequestRedraw();
 
-        public List<Line2d> To_Line_2d(double dx, double dy)
-        {
-            List<Line2d> rez = new();
-
-            for (int i = 0; i < Size; ++i)
-            {
-                int j = (i + 1) % Size;
-                Line2d v = new(new Vector2d(this[i].X + dx, this[i].Y + dy), new Vector2d(this[j].X + dx, this[j].Y + dy));
-                rez.Add(v);
-            }
-
-            return rez;
+            box.Add(_button);
+            Widget = box;
+            Widget.Halign = Align.Start;
         }
     }
-
-    public class Polygon3Vec4D 
-    {
-        private readonly List<Vector4d> _list;
-        public int Size => _list.Count;
-        
-        public Vector4d this[int i]
-        {
-            get => _list[i];
-            set => _list[i] = value;
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
-
-        public Polygon3Vec4D(Vector4d r, Vector4d l, Vector4d up)
-        {
-            _list = new List<Vector4d> { r, l, up };
-        }
-
-        public Polygon3Vec4D(Vector4d[] l)
-        {
-            _list = new List<Vector4d> { l[0], l[1], l[2] };
-        }
-
-        public void Modify(Matrix4d m)
-        {
-            for (int i = 0; i < _list.Count; ++i)
-            {
-                _list[i] = m * _list[i];
-            }
-        }
-
-        public Polygon3Vec4D New_Modify(Matrix4d m)
-        {
-            Polygon3Vec4D p = new(this[0], this[1], this[2]);
-            p.Modify(m);
-            return p;
-        }
-
-        public double Min_Y()
-        {
-            double min = _list[0].Y;
-
-            for (int i = 0; i < Size; ++i)
-            {
-                if (this[i].Y < min)
-                {
-                    min = this[i].Y;
-                }
-            }
-
-            return min;
-        }
-
-        public List<Line2d> To_Line_2d(double dx, double dy)
-        {
-            List<Line2d> rez = new();
-
-            for (int i = 0; i < Size; ++i)
-            {
-                int j = (i + 1) % Size;
-                Line2d v = new(new Vector2d(this[i].X + dx, this[i].Y + dy), new Vector2d(this[j].X + dx, this[j].Y + dy));
-                rez.Add(v);
-            }
-
-            return rez;
-        }
-    }
-
-    public class Polygon4Vec4d
-    {
-        private readonly List<Vector4d> _list;
-        public int Size => _list.Count;
-
-        public Vector4d Norm
-        {
-            get
-            {
-                Vector4d vec1 = this[3] - this[0];
-                Vector4d vec2 = this[1] - this[0];
-
-                if ((vec1 * vec2).Abs() == 0)
-                {
-                    if (Vector4d.Equal(this[1], this[0]))
-                    {
-                        vec2 = this[2] - this[0];
-                    }
-                    else
-                    {
-                        vec1 = this[2] - this[0];
-                    }
-                    
-                }
-                
-                Vector4d norm = vec1 * vec2 / (vec1 * vec2).Abs();
-
-                return norm;
-            }
-        }
-        
-        public Vector4d this[int i]
-        {
-            get => _list[i];
-            set => _list[i] = value;
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
-
-        public Polygon4Vec4d()
-        {
-            _list = new List<Vector4d>();
-        }
-
-        public Polygon4Vec4d(Vector4d dr, Vector4d dl, Vector4d ul, Vector4d ur)
-        {
-            _list = new List<Vector4d> { dr, dl, ul, ur };
-        }
-
-        public Polygon4Vec4d(Vector4d[] l)
-        {
-            _list = new List<Vector4d> { l[0], l[1], l[2], l[3] };
-        }
-        
-        public Polygon4Vec4d(Polygon4Vec4d p)
-        {
-            _list = new List<Vector4d> { p[0], p[1], p[2], p[3] };
-        }
-
-        public void Add(Vector4d a)
-        {
-            if (Size < 4) _list.Add(new Vector4d(a));
-        }
-
-        public void Modify(Matrix4d m)
-        {
-            for (int i = 0; i < Size; ++i)
-            {
-                this[i] = m * this[i];
-            }
-        }
-
-        public Polygon4Vec4d New_Modify(Matrix4d m)
-        {
-            Polygon4Vec4d p = new(this[0], this[1], this[2], this[3]);
-            p.Modify(m);
-            return p;
-        }
-
-        public double Min_Y()
-        {
-            double min = _list[0].Y;
-
-            for (int i = 0; i < Size; ++i)
-            {
-                if (this[i].Y < min)
-                {
-                    min = this[i].Y;
-                }
-            }
-
-            return min;
-        }
-
-        public List<Line2d> To_Line_2d(double dx, double dy)
-        {
-            List<Line2d> rez = new();
-
-            for (int i = 0; i < Size; ++i)
-            {
-                int j = (i + 1) % Size;
-                Line2d v = new(new Vector2d(this[i].X + dx, this[i].Y + dy), new Vector2d(this[j].X + dx, this[j].Y + dy));
-                rez.Add(v);
-            }
-
-            return rez;
-        }
-
-
-        // public int CompareTo(object obj)
-        // {
-        //     Polygon4Vec4d polygon = obj as Polygon4Vec4d;
-        //
-        //     double minThis = this[0].Y;
-        //     double minP = polygon[0].Y;
-        //
-        //     foreach (Vector4d v in this)
-        //     {
-        //         minThis = v.Y < minThis ? v.Y : minThis;
-        //     }
-        //     
-        //     foreach (Vector4d v in polygon)
-        //     {
-        //         minThis = v.Y < minThis ? v.Y : minThis;
-        //     }
-        //
-        //     return minP < minThis ? 1 : -1;
-        // }
-    }
-
-
-
 }
 
 

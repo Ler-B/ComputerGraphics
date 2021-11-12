@@ -16,16 +16,18 @@ namespace Budnikova_M8O_307_CG3
         [UI] private readonly Box _box = null;
         [UI] private readonly DrawingArea _drawingArea = null;
 
-        private readonly SpinButton _r;
-        private readonly SpinButton _mer, _par;
+        
+        private readonly SpinButtons _parameters;
         private readonly SpinButton _width;
         private readonly CheckButton _hideInvisibleLines;
         private readonly CheckButton _normals, _fill;
-        private readonly CheckButton _oxy, _oxz, _oyz;
+        private readonly CheckButtons _projections;
         private readonly CheckSpin2DButton _iPr;
         private readonly Spin3DButton _colorRgbLine2d, _colorRgbFill;
         private readonly Spin3DButton _position, _rotation;
         private readonly Spin3DButton _scale;
+        private readonly Spin3DButton _cameraCoordinates;
+        private readonly ChoiceButton _modelChoice;
 
 
         public MyWindow() : this(new Builder("Window.glade")) {}
@@ -36,11 +38,11 @@ namespace Budnikova_M8O_307_CG3
             builder.Autoconnect(this);
             DeleteEvent += (_,_) => Application.Quit();
 
-            _r = new SpinButton(this, "R", value: 100, step:50, min:0, max:10000);
-            _mer = new SpinButton(this, "Meridians", value: 5, step: 1, min: 1, max: 100);
-            _par = new SpinButton(this, "Paralels", value: 5, step: 1, min: 1, max: 100);
+            _parameters = new SpinButtons(this, "", new[] {"R", "Meridians", "Paralels"}, new[] {100, 5, 5.0}, new[] {0.0, 1, 1},
+                new[] {10000, 100, 100.0}, new[] {20.0, 1, 1});
+            
             _width = new SpinButton(this, "Line Width", value: 3, step: 1, min: 0.5, max: 10);
-
+            
             _colorRgbLine2d = new Spin3DButton(this, "Color RGB Line2d", x: 255, y: 0, z: 255, min:0, max:255);
             _colorRgbFill = new Spin3DButton(this, "Color RGB Fill", x: 100, y: 0, z: 255, min: 0, max: 255);
 
@@ -49,9 +51,7 @@ namespace Budnikova_M8O_307_CG3
             _normals = new CheckButton(this, "Normals");
             _fill = new CheckButton(this, "Fill");
 
-            _oxy = new CheckButton(this, "xOy");
-            _oxz = new CheckButton(this, "xOz");
-            _oyz = new CheckButton(this, "yOz");
+            _projections = new CheckButtons(this, "",new[] {"xOy", "xOz", "yOz"}, new[] {false, false, false});
 
             _iPr = new CheckSpin2DButton(this, "Izometric", false, "Phi", "Theta", x: 45, y: 35, min1: -45, max1: 45, step1: 90, min2: -35, max2: 35, step2: 70);
 
@@ -59,23 +59,25 @@ namespace Budnikova_M8O_307_CG3
             _rotation = new Spin3DButton(this, "Rotation", step: 1, min: -360, max: 360);
             _position = new Spin3DButton(this, "Position", step: 1,  min: -10000, max: 10000);
 
-
-            _box.Add(_r.Widget);
-            _box.Add(_mer.Widget);
-            _box.Add(_par.Widget);
+            _modelChoice = new ChoiceButton(this,"Model" ,new string[] {"Flat shading", "Gouraud shading", "Phong shading"});
+            _cameraCoordinates = new Spin3DButton(this, "Camera coordinates", x: 1, y: 0, z: 1, step: 1, min: -50, max: 50);
+            
+            _box.Add(_parameters.Widget);
 
             _box.Add(_colorRgbLine2d.Widget);
             _box.Add(_colorRgbFill.Widget);
             _box.Add(_width.Widget);
+            
+            _box.Add(_cameraCoordinates.Widget);
 
+            _box.Add(_modelChoice.Widget);
+            
             _box.Add(_hideInvisibleLines.Widget);
-
-            _box.Add(_normals.Widget);
             _box.Add(_fill.Widget);
+            
+            _box.Add(_normals.Widget);
 
-            _box.Add(_oxy.Widget);
-            _box.Add(_oxz.Widget);
-            _box.Add(_oyz.Widget);
+            _box.Add(_projections.Widget);
 
             _box.Add(_iPr.Widget);
 
@@ -179,55 +181,56 @@ namespace Budnikova_M8O_307_CG3
             var dx = _drawingArea.Window.Width / 2;
             var dy = _drawingArea.Window.Height / 2;
 
-            Figure s = new(_r.Value, _mer.Value, _par.Value);
+            Figure figure = new(_parameters["R"], _parameters["Meridians"], _parameters["Paralels"]);
 
-            s.Scale_XYZ(_scale.X * dx / 350, _scale.Y * dx / 350, _scale.Z * dx / 350);
+            figure.Scale_XYZ(_scale.X * dx / 350, _scale.Y * dx / 350, _scale.Z * dx / 350);
 
-            if (!_oxy.Value && !_oxz.Value && !_oyz.Value && !_iPr.Value)
+            if (!_projections["xOy"] && !_projections["xOz"] && !_projections["yOz"] && !_iPr.Value)
             {
-                s.Rotation_XYZ(_rotation.X, _rotation.Y, _rotation.Z);
+                figure.Rotation_XYZ(_rotation.X, _rotation.Y, _rotation.Z);
             }
                 
-            s.Move_XYZ(_position.X, _position.Z, _position.Y);
+            figure.Move_XYZ(_position.X, _position.Z, _position.Y);
 
 
             
 
             //FIGURE
             List<Line2d> figurePoints = new();
-            if (!_oxy.Value && !_oxz.Value && !_oyz.Value && !_iPr.Value && !_hideInvisibleLines.Value)
+            if (!_projections["xOy"] && !_projections["xOz"] && !_projections["yOz"] && !_iPr.Value && !_hideInvisibleLines.Value)
             {
-                figurePoints = s.Get_XYZ_Points(dx: dx, dy: dy);
+                figurePoints = figure.Get_XYZ_Points(dx: dx, dy: dy);
             }
 
             if (_iPr.Value)
             {
-                s.Rotation_XYZ(_iPr.X, _iPr.Y, 0);
-                figurePoints = _hideInvisibleLines.Value ? s.Get_XYZ_Points_Without_Invisible_Lines(dx: dx, dy: dy) : s.Get_XYZ_Points();
-            } else if (!_hideInvisibleLines.Value)
+                figure.Rotation_XYZ(_iPr.X, _iPr.Y, 0);
+                figurePoints = _hideInvisibleLines.Value ? figure.Get_XYZ_Points_Without_Invisible_Lines(dx: dx, dy: dy) : figure.Get_XYZ_Points();
+                
+            } else if (_projections["xOy"] || _projections["xOz"] || _projections["yOz"] || _iPr.Value)
             {
-                if (_oxy.Value)
+                if (_projections["xOy"])
                 {
-                    figurePoints.InsertRange(figurePoints.Count, s.Get_XY_Points(dx: dx, dy: dy));
+                    figurePoints.InsertRange(figurePoints.Count, figure.Get_XY_Points(dx: dx, dy: dy));
                 }
 
-                if (_oxz.Value)
+                if (_projections["xOz"])
                 {
-                    figurePoints.InsertRange(figurePoints.Count, s.Get_XZ_Points(dx: dx, dy: dy));
+                    figurePoints.InsertRange(figurePoints.Count, figure.Get_XZ_Points(dx: dx, dy: dy));
                 }
 
-                if (_oyz.Value)
+                if (_projections["yOz"])
                 {
-                    figurePoints.InsertRange(figurePoints.Count, s.Get_YZ_Points(dx: dx, dy: dy));
+                    figurePoints.InsertRange(figurePoints.Count, figure.Get_YZ_Points(dx: dx, dy: dy));
                 }
 
                 if (_iPr.Value)
                 {
-                    figurePoints.InsertRange(figurePoints.Count, s.Get_Izometric(dx: dx, dy: dy));
+                    figurePoints.InsertRange(figurePoints.Count, figure.Get_Izometric(dx: dx, dy: dy));
                 }
             } else if (_hideInvisibleLines.Value)
             {
-                figurePoints = s.Get_XYZ_Points_Without_Invisible_Lines(dx: dx, dy: dy);
+                figurePoints = figure.Get_XYZ_Points_Without_Invisible_Lines(dx: dx, dy: dy);
             }
 
 
@@ -250,7 +253,7 @@ namespace Budnikova_M8O_307_CG3
             }
 
             //AXIS
-            List<Line2d> oxyz = s.Get_XYZ_Axis(dx: dx * 1.8, dy: dy * 1.8);
+            List<Line2d> oxyz = figure.Get_XYZ_Axis(dx: dx * 1.8, dy: dy * 1.8);
 
             List<(Line2d, int r, int g, int b, double width)> pointsAxis = new() { (oxyz[0], 1, 0, 0, 2),
                                                                                   (oxyz[1], 0, 1, 0, 2),
@@ -263,7 +266,7 @@ namespace Budnikova_M8O_307_CG3
             //NORMALS
             if (_normals.Value)
             {
-                List<Line2d> figureNormals = s.Get_XYZ_Normals(dx: dx, dy: dy);
+                List<Line2d> figureNormals = figure.Get_XYZ_Normals(dx: dx, dy: dy);
 
                 List<(Line2d, int r, int g, int b, double width)> pointsNormals = new();
 

@@ -148,9 +148,9 @@ namespace Budnikova_M8O_307_CG3
         {
             List<Polygon4Vec4d> newPoints = new();
             
-            foreach (Polygon4Vec4d p in _polygons)
+            foreach (var p in _polygons)
             {
-                if (Vector4d.Angle(p.Norm, new Vector4d(0, 1, 0, 1)) < Math.PI / 2)
+                if (Vector4d.Angle(p.Norm, new Vector4d(0, 0, -1, 1)) < Math.PI / 2)
                 {
                     newPoints.Add(new Polygon4Vec4d(p));
                 }
@@ -175,10 +175,10 @@ namespace Budnikova_M8O_307_CG3
         static Line2d Get_2d_line(Vector4d p1, Vector4d p2, double dx = 0, double dy = 0)
         {
             double x1 = p1.X + dx;
-            double y1 = p1.Z + dy;
+            double y1 = p1.Y + dy;
 
             double x2 = p2.X + dx;
-            double y2 = p2.Z + dy;
+            double y2 = p2.Y + dy;
             return new Line2d(new Vector2d(x1, y1), new Vector2d(x2, y2));
         }
 
@@ -222,7 +222,7 @@ namespace Budnikova_M8O_307_CG3
 
             foreach (var p in _axis)
             {
-                Line2d newLine = new(new Vector2d(p[0].X + dx, p[0].Z + dy), new Vector2d(p[1].X + dx, p[1].Z + dy));
+                Line2d newLine = new(new Vector2d(p[0].X + dx, p[0].Y + dy), new Vector2d(p[1].X + dx, p[1].Y + dy));
                 rezList.Add(newLine);
             }
 
@@ -244,13 +244,29 @@ namespace Budnikova_M8O_307_CG3
                 Vector4d p1 = (p[0] + p[1] + p[2] + p[3]) / 4;
                 Vector4d p2 = p1 + norm * l2;
 
-                Line2d newLine = new(new Vector2d(p1.X + dx, p1.Z + dy), new Vector2d(p2.X + dx, p2.Z + dy));
+                Line2d newLine = new(new Vector2d(p1.X + dx, p1.Y + dy), new Vector2d(p2.X + dx, p2.Y + dy));
                 rezList.Add(newLine);
             }
  
             return rezList;
         }
+        public List<Polygon4Vec4d> Get_Polygons(double dx = 0, double dy = 0, double dz = 0)
+        {
+            List<Polygon4Vec4d> newPoligons = _polygons;
 
+            foreach (Polygon4Vec4d p in newPoligons)
+            {
+                foreach (Vector4d v in p)
+                {
+                    v.X += dx;
+                    v.Y += dy;
+                    v.Z += dz;
+                }
+                
+            }
+
+            return newPoligons;
+        }
         public List<Line2d> Get_Izometric(double dx = 0, double dy = 0)
         {
             List<Line2d> rezList = new();
